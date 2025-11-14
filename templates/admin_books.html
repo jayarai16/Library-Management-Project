@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Panel - Library Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="admin-header">
+        <h1>🔐 Admin Panel - Manage Books</h1>
+        <p class="subtitle">Add and manage library inventory</p>
+    </div>
+
+    <!-- Add New Book Section -->
+    <div class="admin-section">
+        <h2>➕ Add New Book</h2>
+        <form method="POST" enctype="multipart/form-data" class="form admin-form">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="title">Book Title:</label>
+                    <input type="text" id="title" name="title" required class="form-control" placeholder="Enter book title">
+                </div>
+                <div class="form-group">
+                    <label for="author">Author:</label>
+                    <input type="text" id="author" name="author" required class="form-control" placeholder="Enter author name">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="isbn">ISBN:</label>
+                    <input type="text" id="isbn" name="isbn" required class="form-control" placeholder="Enter ISBN">
+                </div>
+                <div class="form-group">
+                    <label for="publication_year">Publication Year:</label>
+                    <input type="number" id="publication_year" name="publication_year" required class="form-control" placeholder="YYYY">
+                </div>
+                <div class="form-group">
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" id="quantity" name="quantity" value="1" min="1" class="form-control">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="image_url">Cover Image URL (optional):</label>
+                    <input type="url" id="image_url" name="image_url" class="form-control" placeholder="https://example.com/cover.jpg">
+                </div>
+                <div class="form-group">
+                    <label for="cover_file">Or Upload Cover Image:</label>
+                    <input type="file" id="cover_file" name="cover_file" accept="image/*" class="form-control" placeholder="Upload image">
+                    <small class="form-text">Supported: JPG, PNG, GIF (Max 5MB)</small>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description:</label>
+                <textarea id="description" name="description" rows="3" class="form-control" placeholder="Enter book description (optional)"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-success">Add Book</button>
+        </form>
+    </div>
+
+    <!-- Books List Section -->
+    <div class="admin-section">
+        <h2>📚 Library Inventory</h2>
+        {% if books %}
+            <div class="books-table-responsive">
+                <table class="books-table admin-table">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>ISBN</th>
+                            <th>Year</th>
+                            <th>Total</th>
+                            <th>Available</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for book in books %}
+                        <tr>
+                            <td><strong>{{ book.title }}</strong></td>
+                            <td>{{ book.author }}</td>
+                            <td>{{ book.isbn }}</td>
+                            <td>{{ book.publication_year }}</td>
+                            <td class="text-center">{{ book.quantity }}</td>
+                            <td class="text-center">{{ book.get_available_count() }}</td>
+                            <td>
+                                {% if book.available %}
+                                    <span class="badge badge-success">Available</span>
+                                {% else %}
+                                    <span class="badge badge-warning">Limited</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No books in the library yet. Add your first book using the form above.</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="admin-footer">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

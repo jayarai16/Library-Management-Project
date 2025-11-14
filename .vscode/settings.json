@@ -1,0 +1,6 @@
+{
+  // Use the project's virtual environment by default
+  "python.defaultInterpreterPath": "${workspaceFolder}\\venv\\Scripts\\python.exe",
+  // Optionally format on save
+  "editor.formatOnSave": false
+}

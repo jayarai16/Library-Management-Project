@@ -1,0 +1,298 @@
+{% extends "base.html" %}
+
+{% block title %}{{ book.title }} - Library Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="book-detail-container">
+        <div class="book-detail-media">
+            <img src="{{ book.image_url or 'https://via.placeholder.com/240x360?text=No+Cover' }}" alt="{{ book.title }}" class="detail-cover">
+        </div>
+        
+        <div class="book-detail-info">
+            <h1>{{ book.title }}</h1>
+            <p class="book-author">by {{ book.author }}</p>
+            
+            {% if avg_rating > 0 %}
+            <div class="rating-display">
+                <span class="stars">
+                    {% for i in range(5) %}
+                        {% if i < avg_rating %}
+                        ★
+                        {% else %}
+                        ☆
+                        {% endif %}
+                    {% endfor %}
+                </span>
+                <span class="rating-value">{{ avg_rating }}/5 ({{ reviews|length }} review{{ 's' if reviews|length != 1 else '' }})</span>
+            </div>
+            {% endif %}
+            
+            <div class="book-metadata">
+                <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+                <p><strong>Publication Year:</strong> {{ book.publication_year }}</p>
+                <p><strong>Available Copies:</strong> {{ book.get_available_count() }} / {{ book.quantity }}</p>
+            </div>
+            
+            {% if book.description %}
+            <div class="book-description">
+                <h3>Description</h3>
+                <p>{{ book.description }}</p>
+            </div>
+            {% endif %}
+            
+            <div class="book-actions">
+                {% if book.available %}
+                <form method="POST" action="{{ url_for('borrow_book', book_id=book.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-primary btn-large">📖 Borrow Book</button>
+                </form>
+                {% else %}
+                <button type="button" class="btn btn-disabled btn-large" disabled>📖 Not Available</button>
+                {% endif %}
+                
+                {% if wishlist_item %}
+                <form method="POST" action="{{ url_for('remove_from_wishlist', wishlist_id=wishlist_item.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-large" title="Remove from wishlist">❤️ Remove from Wishlist</button>
+                </form>
+                {% else %}
+                <form method="POST" action="{{ url_for('add_to_wishlist', book_id=book.id) }}" style="display:inline;">
+                    <button type="submit" class="btn btn-secondary btn-large">🤍 Add to Wishlist</button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Reviews Section -->
+    <div class="reviews-section">
+        <h2>📝 Reviews & Ratings</h2>
+        
+        <!-- Submit Review Form -->
+        <div class="review-form-container">
+            <h3>Share Your Review</h3>
+            <form method="POST" action="{{ url_for('submit_review', book_id=book.id) }}" class="review-form">
+                <div class="form-group">
+                    <label for="rating">Rating (1-5 stars):</label>
+                    <div class="rating-input">
+                        {% for i in range(1, 6) %}
+                        <input type="radio" id="star{{ i }}" name="rating" value="{{ i }}" 
+                               {% if user_review and user_review.rating == i %}checked{% endif %}>
+                        <label for="star{{ i }}" class="star-label">★</label>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="comment">Your Review (optional):</label>
+                    <textarea id="comment" name="comment" class="form-control" rows="4" maxlength="1000" placeholder="Share your thoughts about this book...">{% if user_review %}{{ user_review.comment }}{% endif %}</textarea>
+                    <small class="form-text">Max 1000 characters</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Submit Review</button>
+            </form>
+        </div>
+        
+        <!-- Reviews List -->
+        {% if reviews %}
+        <div class="reviews-list">
+            <h3>All Reviews ({{ reviews|length }})</h3>
+            {% for review in reviews %}
+            <div class="review-item">
+                <div class="review-header">
+                    <strong>{{ review.user.username }}</strong>
+                    <span class="review-rating">
+                        {% for i in range(1, 6) %}
+                            {% if i <= review.rating %}★{% else %}☆{% endif %}
+                        {% endfor %}
+                        ({{ review.rating }}/5)
+                    </span>
+                </div>
+                {% if review.comment %}
+                <p class="review-comment">{{ review.comment }}</p>
+                {% endif %}
+                <small class="review-date">{{ review.created_at.strftime('%b %d, %Y') }}</small>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <p>No reviews yet. Be the first to review this book!</p>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="detail-footer">
+        <a href="{{ url_for('books') }}" class="btn btn-outline">← Back to Books</a>
+    </div>
+</div>
+
+<style>
+.book-detail-container {
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    gap: 3rem;
+    margin-bottom: 3rem;
+    background: white;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow);
+}
+
+.book-detail-media {
+    display: flex;
+    justify-content: center;
+}
+
+.detail-cover {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.5rem;
+    box-shadow: var(--shadow-lg);
+}
+
+.book-author {
+    font-size: 1.25rem;
+    color: #9ca3af;
+    margin-bottom: 1rem;
+}
+
+.rating-display {
+    margin: 1rem 0;
+    padding: 1rem;
+    background: #fef3c7;
+    border-radius: 0.5rem;
+}
+
+.stars {
+    color: #f59e0b;
+    font-size: 1.5rem;
+}
+
+.rating-value {
+    margin-left: 0.5rem;
+    color: #92400e;
+}
+
+.book-metadata {
+    margin: 1.5rem 0;
+    padding: 1.5rem;
+    background: #f3f4f6;
+    border-radius: 0.5rem;
+}
+
+.book-metadata p {
+    margin-bottom: 0.5rem;
+}
+
+.book-description {
+    margin: 1.5rem 0;
+}
+
+.book-description h3 {
+    margin-bottom: 0.5rem;
+}
+
+.book-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+}
+
+.btn-large {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+}
+
+.reviews-section {
+    background: white;
+    padding: 2rem;
+    border-radius: 0.75rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 2rem;
+}
+
+.review-form-container {
+    background: #f9fafb;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.review-form {
+    margin-top: 1rem;
+}
+
+.rating-input {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.rating-input input[type="radio"] {
+    display: none;
+}
+
+.star-label {
+    font-size: 2rem;
+    cursor: pointer;
+    color: #d1d5db;
+    transition: var(--transition);
+}
+
+.rating-input input[type="radio"]:checked ~ .star-label,
+.rating-input input[type="radio"]:hover ~ .star-label {
+    color: #f59e0b;
+}
+
+.reviews-list {
+    margin-top: 2rem;
+}
+
+.review-item {
+    padding: 1.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.review-rating {
+    color: #f59e0b;
+    font-weight: 600;
+}
+
+.review-comment {
+    margin: 0.75rem 0;
+    line-height: 1.6;
+}
+
+.review-date {
+    color: #9ca3af;
+}
+
+.detail-footer {
+    text-align: center;
+}
+
+@media (max-width: 768px) {
+    .book-detail-container {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .book-actions {
+        flex-direction: column;
+    }
+    
+    .book-actions form {
+        width: 100%;
+    }
+}
+</style>
+{% endblock %}

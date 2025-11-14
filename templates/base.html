@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Library Management System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Bar -->
+    {% if session.get('user_id') %}
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <a href="{{ url_for('dashboard') }}">📚 Library Management</a>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
+                <li><a href="{{ url_for('books') }}">Browse Books</a></li>
+                <li><a href="{{ url_for('wishlist') }}" title="View your wishlist">❤️ Wishlist</a></li>
+
+                <!-- Only show Admin Panel if user is admin -->
+                {% if current_user is defined and current_user.is_admin %}
+                <li><a href="{{ url_for('admin_books') }}">Admin Panel</a></li>
+                {% endif %}
+
+                <li class="nav-right">
+                    <span>👤 {{ session.get('username') }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    {% endif %}
+
+    <!-- Flash Messages -->
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">
+                        <button type="button" class="alert-close" onclick="this.parentElement.style.display='none';">×</button>
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2025 Library Management System. All rights reserved.</p>
+            <p>Manage your library efficiently with our system.</p>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

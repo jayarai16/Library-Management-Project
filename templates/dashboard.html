@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Library Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dashboard-header">
+        <h1>👋 Welcome, {{ session.get('username') }}!</h1>
+        <p class="dashboard-subtitle">Manage your library account and borrowed books</p>
+    </div>
+
+    <!-- Statistics Section -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📖</div>
+            <div class="stat-content">
+                <h3>{{ borrowed_books|length }}</h3>
+                <p>Books Borrowed</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div class="stat-content">
+                <h3>{{ available_books|length }}</h3>
+                <p>Available Books</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">⏰</div>
+            <div class="stat-content">
+                <h3>14 Days</h3>
+                <p>Borrow Period</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Borrowed Books Section -->
+    <div class="dashboard-section">
+        <h2>📖 Your Borrowed Books</h2>
+        {% if borrowed_books %}
+            <div class="books-table-responsive">
+                <table class="books-table">
+                    <thead>
+                        <tr>
+                            <th>Book Title</th>
+                            <th>Author</th>
+                            <th>Borrow Date</th>
+                            <th>Due Date</th>
+                            <th>Days Remaining</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for borrow in borrowed_books %}
+                        <tr class="{% if borrow.is_overdue() %}row-overdue{% endif %}">
+                            <td><strong>{{ borrow.book.title }}</strong></td>
+                            <td>{{ borrow.book.author }}</td>
+                            <td>{{ borrow.borrow_date.strftime('%Y-%m-%d') }}</td>
+                            <td>{{ borrow.due_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                <span class="badge {% if borrow.is_overdue() %}badge-danger{% elif borrow.days_until_due() <= 3 %}badge-warning{% else %}badge-success{% endif %}">
+                                    {% if borrow.is_overdue() %}
+                                        OVERDUE ({{ borrow.days_overdue() }} days)
+                                    {% else %}
+                                        {{ borrow.days_until_due() }} days
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <form method="POST" action="{{ url_for('return_book', borrowing_id=borrow.id) }}" style="display:inline;">
+                                    <button type="submit" class="btn btn-small btn-success">Return</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>You haven't borrowed any books yet.</p>
+                <a href="{{ url_for('books') }}" class="btn btn-primary">Browse Books</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Available Books Section -->
+    <div class="dashboard-section">
+        <h2>📚 Recently Added Books</h2>
+        {% if available_books %}
+            <div class="books-grid">
+                {% for book in available_books[:6] %}
+                    <div class="book-card">
+                        <div class="book-header">
+                            <h3>{{ book.title }}</h3>
+                            <span class="badge badge-success">Available</span>
+                        </div>
+                        <div class="book-media">
+                            <img class="book-cover" src="{{ book.image_url or 'https://via.placeholder.com/120x180?text=No+Cover' }}" alt="{{ book.title }} cover" onerror="this.src='https://via.placeholder.com/120x180?text=No+Cover'">
+                        </div>
+                        <div class="book-details">
+                            <p><strong>Author:</strong> {{ book.author }}</p>
+                            <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+                            <p><strong>Year:</strong> {{ book.publication_year }}</p>
+                            {% if book.description %}
+                            <p><strong>Description:</strong> {{ book.description[:120] }}{% if book.description|length > 120 %}...{% endif %}</p>
+                            {% endif %}
+                        </div>
+                        <form method="POST" action="{{ url_for('borrow_book', book_id=book.id) }}" style="display:inline;">
+                            <button type="submit" class="btn btn-primary btn-block">Borrow Book</button>
+                        </form>
+                    </div>
+                    {% endfor %}
+            </div>
+            <div class="dashboard-footer">
+                <a href="{{ url_for('books') }}" class="btn btn-outline">View All Books</a>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No books available at the moment.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

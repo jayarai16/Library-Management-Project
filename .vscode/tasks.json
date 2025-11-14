@@ -1,0 +1,33 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Flask (venv)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\venv\\Scripts\\python.exe app.py",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "Init DB (venv)",
+      "type": "shell",
+      "command": "${workspaceFolder}\\venv\\Scripts\\python.exe init_db.py",
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

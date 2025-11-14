@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block title %}My Wishlist - Library Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="wishlist-header">
+        <h1>❤️ My Wishlist</h1>
+        <p class="subtitle">Books you want to read later</p>
+    </div>
+
+    {% if wishlist_items %}
+        <div class="wishlist-count">
+            <p>You have <strong>{{ wishlist_items|length }}</strong> book(s) in your wishlist</p>
+        </div>
+        
+        <div class="wishlist-grid">
+            {% for item in wishlist_items %}
+            <div class="wishlist-card">
+                <div class="book-header">
+                    <h3>{{ item.book.title }}</h3>
+                </div>
+
+                <div class="wishlist-media">
+                    <img class="wishlist-cover" src="{{ item.book.image_url or 'https://via.placeholder.com/160x240?text=No+Cover' }}" alt="{{ item.book.title }} cover" onerror="this.src='https://via.placeholder.com/160x240?text=No+Cover'">
+                </div>
+
+                <div class="book-details">
+                    <p><strong>Author:</strong> {{ item.book.author }}</p>
+                    <p><strong>ISBN:</strong> {{ item.book.isbn }}</p>
+                    <p><strong>Year:</strong> {{ item.book.publication_year }}</p>
+                    <p><strong>Available Copies:</strong> {{ item.book.get_available_count() }} / {{ item.book.quantity }}</p>
+                    {% if item.book.description %}
+                    <p><strong>Description:</strong> {{ item.book.description[:200] }}{% if item.book.description|length > 200 %}...{% endif %}</p>
+                    {% endif %}
+                </div>
+
+                <div class="wishlist-actions">
+                    {% if item.book.available %}
+                    <form method="POST" action="{{ url_for('borrow_book', book_id=item.book.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-primary btn-small">Borrow Now</button>
+                    </form>
+                    {% else %}
+                    <button type="button" class="btn btn-disabled btn-small" disabled>Not Available</button>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('remove_from_wishlist', wishlist_id=item.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-danger btn-small" title="Remove from wishlist">Remove</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h2>Your wishlist is empty</h2>
+            <p>Add books from the library to save them for later.</p>
+            <a href="{{ url_for('books') }}" class="btn btn-primary">Browse Books</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

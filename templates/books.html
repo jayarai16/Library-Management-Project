@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}Browse Books - Library Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="books-header">
+        <h1>📚 Browse Library Books</h1>
+        <p class="subtitle">Search and explore our collection</p>
+    </div>
+
+    <!-- Search and Filter Section -->
+    <div class="search-section">
+        <form method="GET" action="{{ url_for('books') }}" class="search-form">
+            <div class="form-row">
+                <div class="form-group flex-1">
+                    <input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Search by title, author, or ISBN...">
+                </div>
+                <div class="form-group">
+                    <select name="filter" class="form-control">
+                        <option value="all" {% if filter_type == 'all' %}selected{% endif %}>All Books</option>
+                        <option value="available" {% if filter_type == 'available' %}selected{% endif %}>Available</option>
+                        <option value="unavailable" {% if filter_type == 'unavailable' %}selected{% endif %}>Unavailable</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary">Search</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Books Display -->
+    {% if books %}
+        <div class="books-count">
+            <p>Found <strong>{{ books|length }}</strong> book(s)</p>
+        </div>
+        
+        <div class="books-grid">
+            {% for book in books %}
+            <div class="book-card {% if not book.available %}unavailable{% endif %}" 
+                 data-title="{{ book.title }}" 
+                 data-author="{{ book.author }}" 
+                 data-isbn="{{ book.isbn }}" 
+                 data-year="{{ book.publication_year }}" 
+                 data-available-count="{{ book.get_available_count() }}" 
+                 data-quantity="{{ book.quantity }}" 
+                 data-description="{{ (book.description or '')|e }}" 
+                 data-image="{{ book.image_url or 'https://via.placeholder.com/240x360?text=No+Cover' }}">
+                <div class="book-header">
+                    <h3>{{ book.title }}</h3>
+                    {% if book.available %}
+                        <span class="badge badge-success">Available</span>
+                    {% else %}
+                        <span class="badge badge-danger">Unavailable</span>
+                    {% endif %}
+                </div>
+
+                <div class="book-media">
+                    <img class="book-cover" src="{{ book.image_url or 'https://via.placeholder.com/160x240?text=No+Cover' }}" alt="{{ book.title }} cover" onerror="this.src='https://via.placeholder.com/160x240?text=No+Cover'" tabindex="0">
+                </div>
+
+                <div class="book-details">
+                    <p><strong>Author:</strong> {{ book.author }}</p>
+                    <p><strong>ISBN:</strong> {{ book.isbn }}</p>
+                    <p><strong>Year:</strong> {{ book.publication_year }}</p>
+                    <p><strong>Available Copies:</strong> {{ book.get_available_count() }} / {{ book.quantity }}</p>
+                    {% if book.description %}
+                    <p><strong>Description:</strong> {{ book.description[:250] }}{% if book.description|length > 250 %}...{% endif %}</p>
+                    {% endif %}
+                </div>
+
+                <div class="book-card-actions">
+                    {% if book.available %}
+                    <form method="POST" action="{{ url_for('borrow_book', book_id=book.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-primary btn-small">Borrow</button>
+                    </form>
+                    {% else %}
+                    <button type="button" class="btn btn-disabled btn-small" disabled>Not Available</button>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('add_to_wishlist', book_id=book.id) }}" style="display:inline;">
+                        <button type="submit" class="btn btn-secondary btn-small" title="Add to wishlist">♡ Wishlist</button>
+                    </form>
+                    
+                    <a href="{{ url_for('book_detail', book_id=book.id) }}" class="btn btn-outline btn-small">View Details</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="{{ url_for('books', page=1, search=search, filter=filter_type) }}" class="btn btn-outline btn-small">« First</a>
+            <a href="{{ url_for('books', page=page-1, search=search, filter=filter_type) }}" class="btn btn-outline btn-small">‹ Previous</a>
+            {% endif %}
+            
+            <div class="pagination-info">
+                <span>Page {{ page }} of {{ total_pages }}</span>
+            </div>
+            
+            {% if page < total_pages %}
+            <a href="{{ url_for('books', page=page+1, search=search, filter=filter_type) }}" class="btn btn-outline btn-small">Next ›</a>
+            <a href="{{ url_for('books', page=total_pages, search=search, filter=filter_type) }}" class="btn btn-outline btn-small">Last »</a>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <!-- Book detail modal -->
+        <div id="book-modal" class="modal" aria-hidden="true">
+            <div class="modal-overlay" data-close="true"></div>
+            <div class="modal-content">
+                <button class="modal-close" aria-label="Close">&times;</button>
+                <div class="modal-body">
+                    <div class="modal-media">
+                        <img id="modal-cover" src="https://via.placeholder.com/240x360?text=No+Cover" alt="Cover">
+                    </div>
+                    <div class="modal-info">
+                        <h3 id="modal-title">Title</h3>
+                        <p id="modal-author">Author</p>
+                        <p id="modal-isbn">ISBN</p>
+                        <p id="modal-year">Year</p>
+                        <p id="modal-availability">Available: <span id="modal-available-count"></span></p>
+                        <p id="modal-description"></p>
+                        <div id="modal-actions"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <h2>No books found</h2>
+            <p>Try adjusting your search criteria or browse all books.</p>
+            <a href="{{ url_for('books') }}" class="btn btn-primary">View All Books</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
