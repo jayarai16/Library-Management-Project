@@ -26,17 +26,16 @@ def backup_db():
     else:
         print('Instance DB not found at', DB_PATH)
 
-
 def fetch_by_isbn(isbn):
     isbn_clean = isbn.replace('-', '').strip()
     if not isbn_clean:
         return None
     url = f'https://covers.openlibrary.org/b/isbn/{isbn_clean}-L.jpg'
     try:
-        r = requests.head(url, timeout=6)
+        r = requests.head(url, timeout=4)
         if r.status_code == 200:
             return url
-    except Exception:
+    except (requests.Timeout, requests.ConnectionError, Exception):
         pass
     return None
 
@@ -52,7 +51,7 @@ def fetch_by_search(title, author):
         return None
     url = 'https://openlibrary.org/search.json?' + '&'.join(q)
     try:
-        r = requests.get(url, timeout=8)
+        r = requests.get(url, timeout=5)
         if r.status_code == 200:
             data = r.json()
             docs = data.get('docs') or []
@@ -70,7 +69,7 @@ def fetch_by_search(title, author):
                         res = fetch_by_isbn(isbn0)
                         if res:
                             return res
-    except Exception:
+    except (requests.Timeout, requests.ConnectionError, Exception):
         pass
     return None
 
@@ -104,3 +103,8 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+
+
+
