@@ -1,0 +1,474 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile - Library Management System{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Profile Header Section -->
+    <div class="profile-header">
+        <div class="profile-banner"></div>
+        <div class="profile-info-container">
+            <div class="profile-avatar">👤</div>
+            <div class="profile-details">
+                <h1>{{ user.username }}</h1>
+                <p class="profile-email">📧 {{ user.email }}</p>
+                <p class="profile-member-since">Member since {{ user.created_at.strftime('%B %d, %Y') }}</p>
+                {% if user.is_admin %}
+                <span class="badge badge-admin">Admin</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- User Statistics -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon">📖</div>
+            <div class="stat-content">
+                <h3>{{ current_borrowings|length }}</h3>
+                <p>Currently Borrowed</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">📚</div>
+            <div class="stat-content">
+                <h3>{{ all_borrowings|length }}</h3>
+                <p>Total Borrowings</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">✓</div>
+            <div class="stat-content">
+                <h3>{{ (all_borrowings | selectattr('return_date') | list)|length }}</h3>
+                <p>Books Returned</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Currently Borrowed Books Section -->
+    <div class="profile-section">
+        <div class="section-header">
+            <h2>📖 Currently Borrowed Books</h2>
+            <span class="section-badge">{{ current_borrowings|length }}</span>
+        </div>
+
+        {% if current_borrowings %}
+            <div class="borrowing-cards">
+                {% for borrow in current_borrowings %}
+                <div class="borrowing-card {% if borrow.is_overdue() %}overdue{% endif %}">
+                    <div class="book-info">
+                        <div class="book-cover-small">
+                            <img src="{{ borrow.book.image_url or 'https://via.placeholder.com/80x120?text=No+Cover' }}" 
+                                 alt="{{ borrow.book.title }} cover"
+                                 onerror="this.src='https://via.placeholder.com/80x120?text=No+Cover'">
+                        </div>
+                        <div class="borrowing-details">
+                            <h3>{{ borrow.book.title }}</h3>
+                            <p class="book-author">by {{ borrow.book.author }}</p>
+                            
+                            <div class="borrowing-dates">
+                                <div class="date-item">
+                                    <span class="date-label">📅 Borrowed:</span>
+                                    <span class="date-value">{{ borrow.borrow_date.strftime('%Y-%m-%d') }}</span>
+                                </div>
+                                <div class="date-item">
+                                    <span class="date-label">📆 Due:</span>
+                                    <span class="date-value">{{ borrow.due_date.strftime('%Y-%m-%d') }}</span>
+                                </div>
+                            </div>
+
+                            <div class="status-indicator">
+                                {% if borrow.is_overdue() %}
+                                    <span class="status-overdue">⚠️ OVERDUE - {{ borrow.days_overdue() }} days</span>
+                                {% elif borrow.days_until_due() <= 3 %}
+                                    <span class="status-warning">⏰ Due soon - {{ borrow.days_until_due() }} days left</span>
+                                {% else %}
+                                    <span class="status-ok">✓ {{ borrow.days_until_due() }} days remaining</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="borrowing-action">
+                        <form method="POST" action="{{ url_for('return_book', borrowing_id=borrow.id) }}">
+                            <button type="submit" class="btn btn-success">Return Book</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>You don't have any borrowed books right now.</p>
+                <a href="{{ url_for('books') }}" class="btn btn-primary">Browse Books</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Borrowing History Section -->
+    <div class="profile-section">
+        <div class="section-header">
+            <h2>📋 Borrowing History</h2>
+            <span class="section-badge">{{ all_borrowings|length }}</span>
+        </div>
+
+        {% if all_borrowings %}
+            <div class="history-table-responsive">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Book Title</th>
+                            <th>Author</th>
+                            <th>Borrowed On</th>
+                            <th>Due Date</th>
+                            <th>Returned On</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for borrow in all_borrowings %}
+                        <tr class="{% if borrow.return_date is none %}currently-borrowed{% elif borrow.is_overdue() %}overdue-history{% endif %}">
+                            <td>
+                                <strong>{{ borrow.book.title }}</strong>
+                            </td>
+                            <td>{{ borrow.book.author }}</td>
+                            <td>{{ borrow.borrow_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ borrow.due_date.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if borrow.return_date %}
+                                    {{ borrow.return_date.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    <span class="badge badge-warning">Still Borrowed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if borrow.return_date is none %}
+                                    {% if borrow.is_overdue() %}
+                                        <span class="badge badge-danger">OVERDUE</span>
+                                    {% else %}
+                                        <span class="badge badge-info">Active</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="badge badge-success">Returned</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>You haven't borrowed any books yet.</p>
+                <a href="{{ url_for('books') }}" class="btn btn-primary">Start Browsing</a>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Navigation Back -->
+    <div class="profile-footer">
+        <a href="{{ url_for('dashboard') }}" class="btn btn-outline">← Back to Dashboard</a>
+    </div>
+</div>
+
+<style>
+.profile-header {
+    position: relative;
+    margin-bottom: 3rem;
+}
+
+.profile-banner {
+    height: 150px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 12px 12px 0 0;
+}
+
+.profile-info-container {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5rem;
+    padding: 0 1.5rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    margin-top: -40px;
+    padding-bottom: 1.5rem;
+    padding-top: 1rem;
+}
+
+.profile-avatar {
+    font-size: 4rem;
+    min-width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    border: 4px solid white;
+}
+
+.profile-details h1 {
+    margin: 0 0 0.5rem 0;
+    color: #1a202c;
+    font-size: 2rem;
+}
+
+.profile-email, .profile-member-since {
+    color: #4a5568;
+    margin: 0.3rem 0;
+    font-size: 0.95rem;
+}
+
+.badge-admin {
+    display: inline-block;
+    background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+
+.profile-section {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.section-header h2 {
+    margin: 0;
+    color: #1a202c;
+}
+
+.section-badge {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 0.4rem 0.9rem;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.borrowing-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.borrowing-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(102, 126, 234, 0.2);
+    border-radius: 8px;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.borrowing-card:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(102, 126, 234, 0.4);
+    transform: translateY(-2px);
+}
+
+.borrowing-card.overdue {
+    border-color: #f56565;
+    background: rgba(245, 101, 101, 0.1);
+}
+
+.book-info {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+}
+
+.book-cover-small {
+    width: 80px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.book-cover-small img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.borrowing-details {
+    flex: 1;
+}
+
+.borrowing-details h3 {
+    margin: 0 0 0.3rem 0;
+    color: #1a202c;
+    font-size: 1.1rem;
+}
+
+.book-author {
+    color: #718096;
+    margin: 0 0 0.8rem 0;
+    font-style: italic;
+}
+
+.borrowing-dates {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 0.8rem;
+}
+
+.date-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.date-label {
+    color: #718096;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.date-value {
+    color: #1a202c;
+    font-weight: 600;
+}
+
+.status-indicator {
+    margin-top: 0.8rem;
+}
+
+.status-ok, .status-warning, .status-overdue {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.status-ok {
+    background: #c6f6d5;
+    color: #22543d;
+}
+
+.status-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.status-overdue {
+    background: #fed7d7;
+    color: #742a2a;
+}
+
+.borrowing-action {
+    margin-left: 1rem;
+}
+
+.history-table-responsive {
+    overflow-x: auto;
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.history-table thead th {
+    background: rgba(102, 126, 234, 0.1);
+    color: #1a202c;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid rgba(102, 126, 234, 0.2);
+}
+
+.history-table tbody tr {
+    border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+    transition: background 0.3s ease;
+}
+
+.history-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.history-table tbody tr.currently-borrowed {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.history-table tbody tr.overdue-history {
+    background: rgba(245, 101, 101, 0.05);
+}
+
+.history-table td {
+    padding: 1rem;
+    color: #1a202c;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #718096;
+}
+
+.empty-state p {
+    margin: 0 0 1rem 0;
+}
+
+.profile-footer {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+@media (max-width: 768px) {
+    .profile-info-container {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .profile-details h1 {
+        font-size: 1.5rem;
+    }
+
+    .borrowing-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .borrowing-action {
+        margin-left: 0;
+        margin-top: 1rem;
+        width: 100%;
+    }
+
+    .borrowing-dates {
+        grid-template-columns: 1fr;
+    }
+
+    .history-table {
+        font-size: 0.9rem;
+    }
+
+    .history-table td {
+        padding: 0.7rem;
+    }
+}
+</style>
+{% endblock %}

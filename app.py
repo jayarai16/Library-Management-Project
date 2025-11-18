@@ -5,6 +5,34 @@ from werkzeug.utils import secure_filename
 from datetime import datetime, timedelta
 import os
 import uuid
+import re
+
+# -------------------- Validation Functions --------------------
+def validate_username(username):
+    """Validate username: no spaces, 3-20 chars, alphanumeric + underscore"""
+    if not username or len(username) < 3 or len(username) > 20:
+        return False, "Username must be 3-20 characters long"
+    if ' ' in username:
+        return False, "Username cannot contain spaces"
+    if not re.match(r'^[a-zA-Z0-9_]+$', username):
+        return False, "Username can only contain letters, numbers, and underscores"
+    return True, ""
+
+def validate_password(password):
+    """Validate password: min 8 chars, at least 1 uppercase, 1 lowercase, 1 number, 1 special char"""
+    if not password or len(password) < 8:
+        return False, "Password must be at least 8 characters long"
+    if ' ' in password:
+        return False, "Password cannot contain spaces"
+    if not re.search(r'[A-Z]', password):
+        return False, "Password must contain at least one uppercase letter (A-Z)"
+    if not re.search(r'[a-z]', password):
+        return False, "Password must contain at least one lowercase letter (a-z)"
+    if not re.search(r'[0-9]', password):
+        return False, "Password must contain at least one number (0-9)"
+    if not re.search(r'[!@#$%^&*()_\-+=\[\]{};:\'",.<>?/\\|`~]', password):
+        return False, "Password must contain at least one special character (!@#$%^&* etc.)"
+    return True, ""
 
 # -------------------- App & Config --------------------
 app = Flask(__name__)
@@ -50,6 +78,19 @@ def register():
         if not username or not email or not password:
             flash('All fields are required.', 'error')
             return redirect(url_for('register'))
+        
+        # Validate username
+        valid_user, user_msg = validate_username(username)
+        if not valid_user:
+            flash(user_msg, 'error')
+            return redirect(url_for('register'))
+        
+        # Validate password
+        valid_pass, pass_msg = validate_password(password)
+        if not valid_pass:
+            flash(pass_msg, 'error')
+            return redirect(url_for('register'))
+        
         if password != confirm_password:
             flash('Passwords do not match.', 'error')
             return redirect(url_for('register'))
@@ -114,6 +155,26 @@ def dashboard():
     borrowed_books = Borrowing.query.filter_by(user_id=user.id, return_date=None).all()
     available_books = Book.query.filter(Book.quantity > 0).all()
     return render_template('dashboard.html', user=user, borrowed_books=borrowed_books, available_books=available_books)
+
+# User Profile
+@app.route('/profile')
+def profile():
+    if 'user_id' not in session:
+        flash('Please log in first.', 'error')
+        return redirect(url_for('login'))
+    user = User.query.get(session['user_id'])
+    if not user:
+        session.clear()
+        flash('User not found.', 'error')
+        return redirect(url_for('login'))
+    
+    # Get currently borrowed books
+    current_borrowings = Borrowing.query.filter_by(user_id=user.id, return_date=None).all()
+    
+    # Get borrowing history (all borrowings)
+    all_borrowings = Borrowing.query.filter_by(user_id=user.id).order_by(Borrowing.borrow_date.desc()).all()
+    
+    return render_template('profile.html', user=user, current_borrowings=current_borrowings, all_borrowings=all_borrowings)
 
 # Browse books
 @app.route('/books')

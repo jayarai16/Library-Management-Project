@@ -19,6 +19,7 @@
                 <li><a href="{{ url_for('dashboard') }}">Dashboard</a></li>
                 <li><a href="{{ url_for('books') }}">Browse Books</a></li>
                 <li><a href="{{ url_for('wishlist') }}" title="View your wishlist">❤️ Wishlist</a></li>
+                <li><a href="{{ url_for('profile') }}" title="View your profile">👤 Profile</a></li>
 
                 <!-- Only show Admin Panel if user is admin -->
                 {% if current_user is defined and current_user.is_admin %}
@@ -26,7 +27,7 @@
                 {% endif %}
 
                 <li class="nav-right">
-                    <span>👤 {{ session.get('username') }}</span>
+                    <span>{{ session.get('username') }}</span>
                     <a href="{{ url_for('logout') }}" class="btn-logout">Logout</a>
                 </li>
             </ul>
@@ -56,7 +57,7 @@
     <!-- Footer -->
     <footer class="footer">
         <div class="footer-content">
-            <p>&copy; 2025 Library Management System. All rights reserved.</p>
+            <p>&copy; Library Management System. All rights reserved.</p>
             <p>Manage your library efficiently with our system.</p>
         </div>
     </footer>

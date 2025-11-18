@@ -9,10 +9,11 @@
             <h1>📚 Create Account</h1>
             <p class="subtitle">Join our library community</p>
             
-            <form method="POST" class="form">
+            <form method="POST" class="form" id="registerForm">
                 <div class="form-group">
                     <label for="username">Username:</label>
                     <input type="text" id="username" name="username" required class="form-control" placeholder="Choose a username">
+                    <small class="form-text">3-20 characters, letters/numbers/underscore only, no spaces</small>
                 </div>
                 
                 <div class="form-group">
@@ -23,7 +24,37 @@
                 <div class="form-group">
                     <label for="password">Password:</label>
                     <input type="password" id="password" name="password" required class="form-control" placeholder="Enter a strong password">
-                    <small class="form-text">Password should be at least 6 characters</small>
+                    
+                    <!-- Password requirements display -->
+                    <div class="password-requirements">
+                        <small class="form-text" style="font-weight: 600; margin-bottom: 0.5rem;">Password must contain:</small>
+                        <ul class="requirements-list">
+                            <li id="req-length" class="requirement">
+                                <span class="requirement-icon">✗</span>
+                                At least 8 characters
+                            </li>
+                            <li id="req-uppercase" class="requirement">
+                                <span class="requirement-icon">✗</span>
+                                At least one uppercase letter (A-Z)
+                            </li>
+                            <li id="req-lowercase" class="requirement">
+                                <span class="requirement-icon">✗</span>
+                                At least one lowercase letter (a-z)
+                            </li>
+                            <li id="req-number" class="requirement">
+                                <span class="requirement-icon">✗</span>
+                                At least one number (0-9)
+                            </li>
+                            <li id="req-special" class="requirement">
+                                <span class="requirement-icon">✗</span>
+                                At least one special character (!@#$%^&* etc.)
+                            </li>
+                            <li id="req-nospace" class="requirement">
+                                <span class="requirement-icon">✗</span>
+                                No spaces
+                            </li>
+                        </ul>
+                    </div>
                 </div>
                 
                 <div class="form-group">
@@ -31,7 +62,7 @@
                     <input type="password" id="confirm_password" name="confirm_password" required class="form-control" placeholder="Confirm your password">
                 </div>
                 
-                <button type="submit" class="btn btn-primary btn-block">Create Account</button>
+                <button type="submit" class="btn btn-primary btn-block" id="submitBtn">Create Account</button>
             </form>
             
             <div class="auth-link">
@@ -40,4 +71,95 @@
         </div>
     </div>
 </div>
+
+<style>
+.password-requirements {
+    background: #f0f9ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-top: 0.5rem;
+}
+
+.requirements-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.requirement {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem 0;
+    color: #6b7280;
+    font-size: 0.9rem;
+}
+
+.requirement.met {
+    color: #10b981;
+    font-weight: 600;
+}
+
+.requirement-icon {
+    display: inline-block;
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.5rem;
+    text-align: center;
+    font-weight: bold;
+    color: #ef4444;
+}
+
+.requirement.met .requirement-icon {
+    color: #10b981;
+}
+
+#submitBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const passwordInput = document.getElementById('password');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    const requirements = {
+        'req-length': (pwd) => pwd.length >= 8,
+        'req-uppercase': (pwd) => /[A-Z]/.test(pwd),
+        'req-lowercase': (pwd) => /[a-z]/.test(pwd),
+        'req-number': (pwd) => /[0-9]/.test(pwd),
+        'req-special': (pwd) => /[!@#$%^&*()_\-+=\[\]{};:\'",.<>?/\\|`~]/.test(pwd),
+        'req-nospace': (pwd) => !/\s/.test(pwd)
+    };
+    
+    function updateRequirements() {
+        const password = passwordInput.value;
+        let allMet = true;
+        
+        for (const [id, check] of Object.entries(requirements)) {
+            const element = document.getElementById(id);
+            const isMet = check(password);
+            
+            if (isMet) {
+                element.classList.add('met');
+                element.querySelector('.requirement-icon').textContent = '✓';
+            } else {
+                element.classList.remove('met');
+                element.querySelector('.requirement-icon').textContent = '✗';
+                allMet = false;
+            }
+        }
+        
+        // Disable submit button if requirements not met
+        submitBtn.disabled = !allMet;
+    }
+    
+    passwordInput.addEventListener('input', updateRequirements);
+    
+    // Initial check
+    updateRequirements();
+});
+</script>
 {% endblock %}

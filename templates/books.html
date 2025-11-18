@@ -62,19 +62,35 @@
                     <p><strong>Author:</strong> {{ book.author }}</p>
                     <p><strong>ISBN:</strong> {{ book.isbn }}</p>
                     <p><strong>Year:</strong> {{ book.publication_year }}</p>
-                    <p><strong>Available Copies:</strong> {{ book.get_available_count() }} / {{ book.quantity }}</p>
+                    
+                    <!-- Availability Status -->
+                    <div class="availability-status">
+                        {% set available_count = book.get_available_count() %}
+                        {% if available_count > 2 %}
+                            <span class="status-icon status-plenty">✓</span>
+                            <span class="status-text"><strong>{{ available_count }} copies available</strong></span>
+                        {% elif available_count > 0 %}
+                            <span class="status-icon status-limited">!</span>
+                            <span class="status-text"><strong>Only {{ available_count }} copy/copies left</strong></span>
+                        {% else %}
+                            <span class="status-icon status-unavailable">✗</span>
+                            <span class="status-text"><strong>Currently unavailable</strong></span>
+                        {% endif %}
+                        <span class="status-detail">({{ available_count }}/{{ book.quantity }})</span>
+                    </div>
+                    
                     {% if book.description %}
                     <p><strong>Description:</strong> {{ book.description[:250] }}{% if book.description|length > 250 %}...{% endif %}</p>
                     {% endif %}
                 </div>
 
                 <div class="book-card-actions">
-                    {% if book.available %}
+                    {% if book.get_available_count() > 0 %}
                     <form method="POST" action="{{ url_for('borrow_book', book_id=book.id) }}" style="display:inline;">
-                        <button type="submit" class="btn btn-primary btn-small">Borrow</button>
+                        <button type="submit" class="btn btn-primary btn-small" title="Borrow this book">📖 Borrow</button>
                     </form>
                     {% else %}
-                    <button type="button" class="btn btn-disabled btn-small" disabled>Not Available</button>
+                    <button type="button" class="btn btn-disabled btn-small" disabled title="No copies available">📖 Not Available</button>
                     {% endif %}
                     
                     <form method="POST" action="{{ url_for('add_to_wishlist', book_id=book.id) }}" style="display:inline;">
